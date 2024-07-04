@@ -333,12 +333,138 @@ ___
 
 ## <a id="Spring">Spring</a>
 ### 1. Нюансы инициализаций в связке с Kotlin
-> Когда я задал этот вопрос, получил подсказку: @ConstructorBinding, @Autowired с lateinit var, конструкторы с val + @COmponent etc
+> Когда я задал этот вопрос, получил подсказку: 
+> @ConstructorBinding, 
+> @Autowired с lateinit var, 
+> конструкторы с val + @Component 
+> etc
+#### @ConstructorBinding
+[Статья на Baeldung](https://www.baeldung.com/kotlin/spring-boot-configurationproperties)
+Приводится пример:
+```yaml
+# application.yaml 
+api:
+    clientId: "client123"
+    url: "https://api.url.com"
+    key: "api-access-key"
+```
+```kotlin
+// class ApiConfiguration
+@ConfigurationProperties(prefix = "api")
+@ConstructorBinding
+data class ApiConfiguration(
+    val clientId: String,
+    val url: String,
+    val key: String
+)
+// class AppConfiguration
+@Configuration
+@EnableConfigurationProperties(ApiConfiguration::class)
+class AppConfiguration {
+    @Bean
+    fun apiConfiguration(): ApiConfiguration {
+        return ApiConfiguration()
+    }
+}
+
+
+```
+В статье говорится, что без этой аннотации мы могли бы применять только var при создании полей класса ApiConfiguration
+> В этом суть вопроса?
+
+#### @Autowired с lateinit var
+Посмотрел примеры приложений Spring Boot с Kotlin. Встречаю такую конструкцию при объявлении переменных под DI:
+```kotlin
+@Autowired
+lateinit var kotlinClientService: KotlinClientService
+```
+И через конструктор:
+```kotlin
+@RestController
+class KotlinController(val kotlinAccountService: KotlinAccountService)
+```
+> Какой из этих способов корректный и общепринятый? При разработке на Java при добавлении @Autowired над полем сама Idea предлагает заменить это на DI через конструктор. А здесь как?
+> (конструкторы с val + @Component) - ты имел в виду как раз второй вариант с внедрением через конструктор, я правильно понял?
 
 ### 2. AOP (понимание)
-### 3. @Transactional (настройка изоляций), ручное открытие и закрытие транзакций через TM
-### 4. @ConditionalOnProperty и другие — инициализации бинов при определенных условиях
+[Официальная документация](https://docs.spring.io/spring-framework/reference/core/aop.html)
+> На учебном проекте применял Spring AOP для логирования - общее понимание есть, но опыта маловато...
 
+[Ссылка на репозиорий с примером](https://github.com/costinm92/kotlin-logging-with-spring-aop) (нашел в открытом доступе)
+
+> Не понял только, где @Pointcut объявлен 
+
+### 3. @Transactional (настройка изоляций), ручное открытие и закрытие транзакций через TM
+> Вопросы в процессе подготовки...
+
+### 4. @ConditionalOnProperty и другие — инициализации бинов при определенных условиях
+[Статья на Baeldung](https://www.baeldung.com/spring-conditionalonproperty)
+Есть пример на Java:
+```java
+// NotificationSender
+public interface NotificationSender {
+    String send(String message);
+}
+```
+```yaml
+# application.properties
+notification:
+  service: email
+```
+```java
+// EmailNotification
+public class EmailNotification implements NotificationSender {
+    @Override
+    public String send(String message) {
+        return "Email Notification: " + message;
+    }
+}
+```
+> Здесь мы добавляем вторую реализацию интерфейса
+```java
+// SmsNotification
+public class SmsNotification implements NotificationSender {
+    @Override
+    public String send(String message) {
+        return "SMS Notification: " + message;
+    }
+}
+```
+> Цитирую статью: "Since we have two implementations, let’s see how we can use @ConditionalOnProperty to load the right NotificationSender bean conditionally"
+```java
+// Класс, в котором требуется бины двух реализаций NotificationSender
+class AnotherOne {
+    @Bean(name = "emailNotification")
+    @ConditionalOnProperty(prefix = "notification", name = "service")
+    public NotificationSender notificationSender() {
+        return new EmailNotification();
+    }
+    @Bean(name = "smsNotification")
+    @ConditionalOnProperty(prefix = "notification", name = "service", havingValue = "sms")
+    public NotificationSender notificationSender2() {
+        return new SmsNotification();
+    }
+}
+```
+> Комментарий автора: "With the help of the havingValue attribute, we made it clear that we want to load SmsNotification only when notification.service is set to sms"
+
+> Тесты:
+```java
+class Testing() {
+    @Test
+    public void whenValueSetToEmail_thenCreateEmailNotification() {
+        this.contextRunner.withPropertyValues("notification.service=email")
+                .withUserConfiguration(NotificationConfig.class)
+                .run(context -> {
+                    assertThat(context).hasBean("emailNotification");
+                    NotificationSender notificationSender = context.getBean(EmailNotification.class);
+                    assertThat(notificationSender.send("Hello From Baeldung!")).isEqualTo("Email Notification: Hello From Baeldung!");
+                    assertThat(context).doesNotHaveBean("smsNotification");
+                });
+    }
+}
+```
+> В итоге, добавляя havingValue = "sms" в параметры аннотации @ConditionalOnProperty, мы сказали, что если этого атрибута нет в "notification.service", то этот бин не попадает в Контекст? Верно?
 ___
 
 ## <a id="MQ">MQ</a>
