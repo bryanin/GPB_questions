@@ -2,6 +2,8 @@ package ru.bryanin.dev.questions
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+import ru.bryanin.dev.GPB_questions.Functions
+import ru.bryanin.dev.GPB_questions.KotlinClass
 
 @SpringBootApplication
 class QuestionsApplication
@@ -10,6 +12,7 @@ fun main(args: Array<String>) {
     runApplication<QuestionsApplication>(*args)
 
     // KotlinVariables
+    println("KotlinVariables")
     val kotlinVariables = KotlinVariables()
     // print(kotlinVariables.y) // Error
     kotlinVariables.init()
@@ -17,6 +20,7 @@ fun main(args: Array<String>) {
 
 
     // KotlinClass
+    println("KotlinClass")
     fun testingDataClass() {
         val myDataObject = KotlinDataClass("Параметр 1", 3)
         println(myDataObject)
@@ -25,6 +29,29 @@ fun main(args: Array<String>) {
     testingDataClass()
 
     // Порядок инициализации классов
-    val d = KotlinClass.Derived("dgsd", "52345");
+    println("Порядок инициализации классов")
+    val d = KotlinClass.Child("dgsd", "52345");
+
+    // Null safety
+    println("Null safety")
+    var b: String? = "abc" // can be set to null
+    b = null // ok
+    println(b)
+    var l = if (b != null) b.length else -1
+    println(l)
+    b = "null" // ok
+    println(b)
+    l = if (b != null) b.length else -1
+    println(l)
+
+    // Safe calls
+    println("Safe calls")
+    val a1 = "Kotlin"
+    val b1: String? = null
+    println(b1?.length)
+
+    // Functions
+    println("Functions")
+    Functions().mapAndLetFunctions()
 
 }
