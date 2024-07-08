@@ -1,10 +1,11 @@
-package ru.bryanin.dev.GPB_questions.mvc
+package ru.bryanin.dev.GPB_questions.web.blocking
 
 import org.springframework.stereotype.Service
+import ru.bryanin.dev.GPB_questions.web.commonData.Account
 import java.util.*
 
 @Service
-class KotlinAccountService {
+class WebAccountService {
 
     fun getAllAccounts(): List<Account> {
         return listOf(

@@ -1,5 +1,8 @@
 spring:
   application:
     name: Questions
+  cloud:
+    compatibility-verifier:
+      enabled: false
 server:
   port: 8080

@@ -11,7 +11,8 @@ ___
 ### 1. Инициализация переменных, отличие var от val, lateinit, by lazy
 
 [Официальная документация](https://kotlinlang.org/docs/basic-syntax.html#variables)
-   
+
+#### Типы переменных
 Получается следующее:
    * val - immutable-переменная, аналог final в java, используется для наименования read-only переменных
    * var - аналог mutable-переменной в java
@@ -33,6 +34,8 @@ c = 3
 ```
 > У меня так не получилось, ругается компилятор, см. файл [KotlinVariables.kt](../src/main/kotlin/ru/bryanin/dev/GPB_questions/KotlinVariables.kt) - в чем ошибка?
 
+#### lateinit, by lazy
+
 Что касается lateinit, by lazy (своими словами):
 * lateinit применяется с var в случаях, когда нужна инициализация var после объявления переменной. 
 Обычно производится через стороннюю функцию или Dependency Injection
@@ -42,7 +45,7 @@ c = 3
 ### 2. Разница в классах. Data class, sealed class, object, companion object
 
 [Официальная документация](https://kotlinlang.org/docs/basic-syntax.html#creating-classes-and-instances)
-   
+
 Дополнительные материалы:
 * [Data class](https://habr.com/ru/articles/752450/#5)
 * [Sealed class](https://habr.com/ru/articles/752450/#6)
@@ -93,7 +96,7 @@ class MyClass {
 }
 val myClass = MyClass()
 ```
-
+> Что касается практического смысла применения object или companion object - здесь, как я понимаю, аналогия с static в Java. Верно?
 
 ### 3. Порядок при инициализации классов
 [Официальная документация](https://kotlinlang.org/docs/classes.html)
@@ -128,6 +131,8 @@ val myClass = MyClass()
 
 ### 4. Null safely парадигма котлина. Элвис оператор «?:»
 [Официальная документация](https://kotlinlang.org/docs/null-safety.html)
+
+#### Null safely парадигма
 Что я понял:
 * Если добавить знак ? после типа при объявлении переменных, то такая переменная может содержать null, в противном случае - нет (код не скомпилируется)
 * Вот пример, как обратиться к свойству такой nullable-переменной:
@@ -149,9 +154,10 @@ for (item in listWithNulls) {
     item?.let { println(it) } // prints Kotlin and ignores null
 }
 ```
-* Интересно, что toString(), вызванный на null-объекте, вернет "null"
+* Интересно, что toString(), вызванный на null-объекте, вернет строку "null"
 
-Элвис оператор в [официальной документации](https://kotlinlang.org/docs/null-safety.html#elvis-operator)
+#### Элвис оператор 
+[Официальная документация](https://kotlinlang.org/docs/null-safety.html#elvis-operator)
 
 Оператор позволяет сократить блок if/else при проверке null-переменной:
 ```kotlin
@@ -204,7 +210,7 @@ Person("Alice", 20, "Amsterdam").let {
 }
 ```
 Далее в документации сказано: "Scope functions don't introduce any new technical capabilities, but they can make your code more concise and readable"
-> Я вообще не вижу удобства и какого-то профита от такого подхода. Можешь привести примеры?
+> Сначала не очень понял, в чем разница с Streams в Java, но потом перечитал и подумал, что все-такие не все эти методы возвращают лямбду и есть просто чуть больше удобства в работе с объектами
 
 * .apply
 Пример:
@@ -271,6 +277,7 @@ val letResult = service.let {
 [Официальная документация](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-result/)
 [Статья на Baeldung](https://www.baeldung.com/kotlin/result-class)
 > Класс Result<T> оборачивает результат выполнения операции, и вернет либо инкапсулированный в себя объект, либо инкапсулированное исключение, при этом есть куча удобных методов для работы с сущностями. Верно понял суть?
+
 Пример использования Result:
 ```kotlin
 fun divide(a: Int, b: Int): Result<Int> = if (b != 0) {
@@ -392,10 +399,160 @@ class KotlinController(val kotlinAccountService: KotlinAccountService)
 
 [Ссылка на репозиорий с примером](https://github.com/costinm92/kotlin-logging-with-spring-aop) (нашел в открытом доступе)
 
-> Не понял только, где @Pointcut объявлен 
+> Не понял только, где @Pointcut объявлен
 
 ### 3. @Transactional (настройка изоляций), ручное открытие и закрытие транзакций через TM
-> Вопросы в процессе подготовки...
+
+#### Транзакции
+
+Немного теории:
+* Часто встречающиеся аномалии при параллельной работе с данными:
+  * Dirty read (грязное чтение)
+  * Lost update (потерянное обновление)
+  * Non-repeatable read (неповторяющееся чтение)
+  * Phantom read (фантомное чтение)
+* Существуют 4 уровня изолированности транзакций:
+  * Read uncommitted (чтение незафиксированных данных)
+  * Read committed (чтение зафиксированных данных)
+  * Repeatable read (неизменные данные при повторяющихся чтениях)
+  * Serializable (последовательность выполнения транзакций)
+
+Соотношение уровней изоляции и встречающихся аномалий в PostgreSQL
+
+![Изоляции и присущие им аномалии](../src/main/resources/images/isolation_levels_and_anomalies.png)
+
+####  @Transactional в Spring Framework
+
+Статья на [официальном сайте Spring Framework](https://spring.io/blog/2019/05/16/reactive-transactions-with-spring)
+
+Статья на [Гибхабе про @Transactional в НЕреактивном стеке](https://habr.com/ru/articles/532000/)
+
+* @Transactional - это аннотация из пакета org.springframework.transaction.annotation
+* TM - это Transaction Manager
+
+#### Управление транзакциями
+
+По умолчанию в PostgreSQL применяется уровень изоляции "Read committed". Как происходит управление:
+##### Управление транзакциями в PostgreSQL
+Используется команда SET TRANSACTION:
+```postgresql
+SET TRANSACTION REPEATABLE READ;
+```
+##### Управление транзакциями в Spring Framework
+```java
+public class IsolationLevelExample {
+  private static final int ISOLATION_LEVEL = Connection.TRANSACTION_REPEATABLE_READ;
+  public static void main(String[] args) throws SQLException, InterruptedException {
+    try (
+            final Connection connection = Repository.getConnectionH2();
+            final Statement statement = connection.createStatement()
+    ) {
+      connection.setAutoCommit(false);
+      connection.setTransactionIsolation(ISOLATION_LEVEL);
+      statement.executeUpdate("UPDATE person SET balance = 100000 WHERE id = 1");
+      new OtherTransaction().start();
+      Thread.sleep(2000);
+      connection.rollback();
+    }
+  }
+}
+```
+
+##### Создание транзакций в JDBC
+```java
+import java.sql.Connection;
+class UserConnection {
+  Connection connection = dataSource.getConnection(); // (1)
+    try (connection) {
+        connection.setAutoCommit(false); // (2)
+        // execute some SQL statements...
+        connection.commit(); // (3)
+    } catch (SQLException e) {
+        connection.rollback(); // (4)
+    }    
+}
+```
+##### Программное управление транзакциями Spring
+```java
+@Service
+public class UserService {
+    @Autowired
+    private TransactionTemplate template;
+    public Long registerUser(User user) {
+        Long id = template.execute(status ->  {
+            // execute some SQL that e.g.
+            // inserts the user into the db and returns the autogenerated id
+            return id;
+        });
+    }
+}
+```
+Из [этой](https://struchkov.dev/blog/ru/transaction-jdbc-and-spring-boot/) и [этой](https://struchkov.dev/blog/ru/transactional-isolation-levels/) статей:
+
+По сравнению с обычным примером JDBC:
+1. Вам не нужно открывать и закрывать соединений с базой данных самостоятельно. Вместо этого, вы используете Transaction Callbacks.
+2. Также не нужно ловить SQLExceptions, так как Spring преобразует их в исключения времени выполнения. 
+3. Кроме того, вы лучше интегрируетесь в экосистему Spring. TransactionTemplate будет использовать TransactionManager внутри, который будет использовать источник данных. Всё это бины, которые вы укажете в конфигурации, но о которых вам больше не придется беспокоиться в дальнейшем.
+
+Хотя это, и выглядит небольшим улучшением по сравнению с JDBC, программное управление транзакциями — это не самый лучший способ. Вместо этого, используйте декларативное управление транзакциями.
+
+##### Декларативное управление транзанкциями
+
+Нужно сделать две вещи:
+1. Убедиться, что одна из Spring конфигурации аннотирована @EnableTransactionManagement. В SpringBoot даже этого делать не нужно. 
+2. Убедиться, что вы указали менеджер транзакций в конфигурации. Это делается в любом случае.
+
+И тогда Spring будет обрабатывать транзакции за вас. Любой публичный метод бина, который вы аннотируете @Transactional, будет выполняться внутри транзакции базы данных. Чтобы аннотация @Transactional заработала, делаем следующее:
+```java
+@Configuration
+@EnableTransactionManagement
+public class MySpringConfig {
+    @Bean
+    public PlatformTransactionManager txManager() {
+        return yourTxManager; // more on that later
+    }
+}
+```
+
+```java
+@Transactional
+public class UserService {
+  public Long registerUser(User user) {
+    Connection connection = dataSource.getConnection(); // (1)
+    try (connection) {
+      connection.setAutoCommit(false); // (1)
+      // execute some SQL that e.g.
+      // inserts the user into the db and retrieves the autogenerated id
+      // userDao.save(user); <(2)
+      connection.commit(); // (1)
+    } catch (SQLException e) {
+      connection.rollback(); // (1)
+    }
+  }
+}
+```
+
+##### Участие TransactionManager в управлении транзакциями
+Конфигурация:
+```java
+class Config() {
+  @Bean
+  public DataSource dataSource() {
+    return new MysqlDataSource(); // (1)
+  }
+  @Bean
+  public PlatformTransactionManager txManager() {
+    return new DataSourceTransactionManager(dataSource()); // (2)
+  }
+}
+```
+В итоге:
+1. Если Spring обнаруживает аннотацию @Transactional на бине, он создаёт динамический прокси этого бина 
+2. Прокси имеет доступ к менеджеру транзакций и будет просить его открывать и закрывать транзакции/соединения
+3. Сам менеджер транзакций будет просто управлять соединением JDBC
+
+> Какой подход лучше использовать? 
+
 
 ### 4. @ConditionalOnProperty и другие — инициализации бинов при определенных условиях
 [Статья на Baeldung](https://www.baeldung.com/spring-conditionalonproperty)
@@ -420,7 +577,7 @@ public class EmailNotification implements NotificationSender {
     }
 }
 ```
-> Здесь мы добавляем вторую реализацию интерфейса
+Здесь мы добавляем вторую реализацию интерфейса:
 ```java
 // SmsNotification
 public class SmsNotification implements NotificationSender {
@@ -430,7 +587,7 @@ public class SmsNotification implements NotificationSender {
     }
 }
 ```
-> Цитирую статью: "Since we have two implementations, let’s see how we can use @ConditionalOnProperty to load the right NotificationSender bean conditionally"
+Цитирую статью: "Since we have two implementations, let’s see how we can use @ConditionalOnProperty to load the right NotificationSender bean conditionally"
 ```java
 // Класс, в котором требуется бины двух реализаций NotificationSender
 class AnotherOne {
@@ -446,9 +603,9 @@ class AnotherOne {
     }
 }
 ```
-> Комментарий автора: "With the help of the havingValue attribute, we made it clear that we want to load SmsNotification only when notification.service is set to sms"
+Комментарий автора: "With the help of the havingValue attribute, we made it clear that we want to load SmsNotification only when notification.service is set to sms"
 
-> Тесты:
+Тесты:
 ```java
 class Testing() {
     @Test
@@ -469,15 +626,124 @@ ___
 
 ## <a id="MQ">MQ</a>
 ### 1. JmsTemplate
+[Официальная документация](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/jms/core/JmsTemplate.html)
+
+[Статья на Баелдунге](https://www.baeldung.com/spring-jms)
+
+
+JMS - это Java Message Service. Ключевой класс - JdbcTemplate. 
+
+Пример работы с JMS из [официального гида](https://spring.io/guides/gs/messaging-jms): 
+1. Добавляем зависимости JMS в проект
+2. Имеется класс Получатель (message-driven POJO), содержащий метод отправки сообщений с аннотацией @JmsListener(destination = "???", containerFactory = "???")
+3. Над классом, содержащим метод main() или над другим конфигурационным классом вешаем аннотацию @EnableJms
+4. Создаем бин фабрики, возвращающего JmsListenerContainerFactory<?>
+5. Создаем бин конвертера, возвращающего MessageConverter
+6. Создаем бин JmsTemplate
+7. Вызываем к него метод convertAndSend(), передавая параметрами название destination и передаваемый POJO
+
 ### 2. Заголовки CorrelationId, ReplyToQ
+
+[Вопрос и ответ на StackOverFlow](https://stackoverflow.com/questions/56473137/jms-correlationid-vs-replyto)
+
+> Насколько понял, CorrelationId передается в сообщении, чтобы связать запрос и ответ. Что такое ReplyToQ, наверное, нужно смотреть в прикладном контексте (в зависимости от реализации MQ)?
+
 ### 3. Почитать про IBM MQ. QueueManager, channel, авторизация
+
+#### IBM MQ QueueManager
+[Официальная документация](https://www.ibm.com/docs/fr/ibm-mq/9.2?topic=java-mqqueuemanager)
+
+[A Simple Guide to Using IBM MQ with Java Messaging Service](https://levioconsulting.com/insights/a-simple-guide-to-using-ibm-mq-with-java-messaging-service/)
+
+
+#### IBM MQ channel
+[Официальная документация](https://www.ibm.com/docs/en/ibm-mq/9.2?topic=explorer-channels)
+
+Насколько понял, для решения разных задач в IBM MQ можно использовать 3 различных типа канала: 
+1. Message channel (однонаправленный для связи двух менеджеров очередей)
+2. MQI channel (двунаправленный для связи приложения и менеджера очереди)
+3. AMQP channel (двунаправленный для связи приложения и менеджера очереди)
+
+> Не особо уловил разницу между 2 и 3. Нужна практика
+
+#### IBM MQ авторизация
+[Официальная документация](https://www.ibm.com/docs/en/ibm-mq/9.2?topic=mechanisms-authorization-in-mq)
 
 ___
 
 ## <a id="ProjectReactor">ProjectReactor</a>
+[Официальная документация](https://projectreactor.io/)
+
+[Цикл статей на Хабре о реактивном программировании Spring boot + Java + WebFlux](https://habr.com/ru/articles/565000/)
+
+[Вот еще интересная статья про переход с блокирующего сервиса с Java на неблокирующий с Corutines](https://habr.com/ru/articles/537716/)
+
+> У меня возникли некоторые сложности при реализации сервиса с технологиями WebFlux + ReactiveFeignWebClient. Прошу посмотреть код [здесь](../src/main/kotlin/ru/bryanin/dev/GPB_questions/web/nonblocking/webClient/ReactiveWebClient.kt)
+
 ### 1. Что такое Mono, Flux
+Mono и Flux - реализации интерфейса Publisher<T> из пакета org.reactivestreams. При этом Mono - сущность, содержащая ноль или один экземпляр оборачиваемого класса, Flux - коллекция таких экземпляров
 ### 2. Разница .map и .flatMap
+[Статья на Baeldung](https://www.baeldung.com/java-reactor-map-flatmap)
+
+#### .map()
+Метод map() используется для преобразования каждого элемента потока с помощью заданной функции:
+```java
+@Component
+class MapExample() {
+  Function<String, String> mapper = String::toUpperCase;
+  Flux<String> inFlux = Flux.just("baeldung", ".", "com");
+  Flux<String> outFlux = inFlux.map(mapper);
+}
+//
+@Test
+class TestingMap() {
+    void testMap() {
+      StepVerifier.create(outFlux)
+              .expectNext("BAELDUNG", ".", "COM")
+              .expectComplete()
+              .verify();
+    }
+}
+```
+#### .flatMap()
+Метод .flatMap() может преобразовывать один элемент в несколько, превращая поток потоков в один объединенный поток
+```java
+@Component
+class FlatMapExample() {
+  Function<String, Publisher<String>> mapper = s -> Flux.just(s.toUpperCase().split(""));
+  Flux<String> inFlux = Flux.just("baeldung", ".", "com");
+  Flux<String> outFlux = inFlux.flatMap(mapper);
+}
+//
+@Test
+class TestingFlatMap() {
+    void testFlatMap() {
+      List<String> output = new ArrayList<>();
+      outFlux.subscribe(output::add);
+      assertThat(output).containsExactlyInAnyOrder("B", "A", "E", "L", "D", "U", "N", "G", ".", "C", "O", "M");
+    }
+}
+```
+
 ### 3. onNext, onComplete, onError
+
+Reactive Stream основан на модели Издатель-Подписчик и оперирует 4 интерфейсами:
+* Publisher - поставщик данных в виде событий
+* Subscriber - получает/обрабатывает события от Издателя
+* Subscription - определяет однозначную связь между Подписчиком и Издателем. Имеет 2 метода: запросить (request) и отменить (cancel) подписку
+* Processor - представляет собой стадию обработки
+
+У Подписчика есть 4 метода для работы с полученными событиями:
+* onSubscribe(s: Subscription) - метод вызывается автоматически, когда Издатель регистрируется после того, как Подписчик вызывает метод subscribe()
+* onNext(t: T) - метод вызывается при каждой передаче данных от Издателя к Подписчику
+* onError(t: Throwable) - метод вызывается, если при обработке события возникает какая-либо ошибка
+* onComplete() - метод вызывается, если при обработке события не было ошибки и все события успешно завершены
+
+![onNext, onComplete](../src/main/resources/images/reactive.jpeg)
+
+> В теории понятно, на практике нужно пробовать
+
 ### 4. Что такое сигналы 
 
+> Не понял, что имеется в виду
 ___

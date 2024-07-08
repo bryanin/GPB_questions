@@ -1,10 +1,11 @@
-package ru.bryanin.dev.GPB_questions.mvc
+package ru.bryanin.dev.GPB_questions.web.blocking
 
 import org.springframework.stereotype.Service
+import ru.bryanin.dev.GPB_questions.web.commonData.Client
 import java.util.*
 
 @Service
-class KotlinClientService {
+class WebClientService {
 
     fun getAllClients(): List<Client> {
         return listOf(

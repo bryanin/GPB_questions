@@ -1,4 +1,4 @@
-package ru.bryanin.dev.GPB_questions.mvc
+package ru.bryanin.dev.GPB_questions.web.commonData
 
 import java.util.UUID
 
